@@ -132,7 +132,7 @@ jobs:
       - name: Move artifact.
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
-          cd $REPO_NAME/out/Debug
+          cd $REPO_NAME/out/Release
           mkdir artifact
           mv Telegram.app artifact/
           mv Updater artifact/
