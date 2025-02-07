@@ -17,7 +17,7 @@ namespace Media {
 namespace Streaming {
 namespace {
 
-constexpr auto kMaxFrameArea = 3840 * 2160; // usual 4K
+constexpr auto kMaxFrameArea = 4096 * 2160; // usual 4K
 constexpr auto kDisplaySkipped = crl::time(-1);
 constexpr auto kFinishedPosition = std::numeric_limits<crl::time>::max();
 static_assert(kDisplaySkipped != kTimeUnknown);
