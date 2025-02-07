@@ -324,7 +324,15 @@ def run(commands):
     elif re.search(r'\%', commands):
         error('Bad command: ' + commands)
     else:
-        return subprocess.run("set -e\n" + commands, shell=True, env=modifiedEnv).returncode == 0
+        if os.path.exists("command.sh"):
+            os.remove("command.sh")
+        with open("command.sh", 'w') as file:
+            file.write('#!/bin/bash\nset -e\n' + commands)
+        os.chmod("command.sh", 0o755)
+        result = subprocess.run("./command.sh", shell=True, env=modifiedEnv).returncode == 0
+        if result and os.path.exists("command.sh"):
+            os.remove("command.sh")
+        return result
 
 # Thanks https://stackoverflow.com/a/510364
 class _Getch:
