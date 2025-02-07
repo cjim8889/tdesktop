@@ -37,11 +37,9 @@ on:
       - 'Telegram/configure.bat'
 
 jobs:
-
   macos:
     name: MacOS
-    runs-on: macos-13
-
+    runs-on: macos-latest
     strategy:
       matrix:
         defines:
