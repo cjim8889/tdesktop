@@ -170,6 +170,7 @@ private:
 			not_null<DocumentData*>> data;
 		HistoryItem *item = nullptr;
 		MsgId topicRootId = 0;
+		PeerId monoforumPeerId = 0;
 	};
 	enum class SavePhotoVideo {
 		None,
@@ -290,6 +291,10 @@ private:
 	void showDropdown();
 	void handleTouchTimer();
 	void handleDocumentClick();
+
+	[[nodiscard]] bool canShareAtTime() const;
+	[[nodiscard]] TimeId shareAtVideoTimestamp() const;
+	void shareAtTime();
 
 	void showSaveMsgToast(const QString &path, auto phrase);
 	void showSaveMsgToastWith(
@@ -557,10 +562,12 @@ private:
 	PhotoData *_photo = nullptr;
 	DocumentData *_document = nullptr;
 	DocumentData *_chosenQuality = nullptr;
+	PhotoData *_videoCover = nullptr;
 	Media::VideoQuality _quality;
 	QString _documentLoadingTo;
 	std::shared_ptr<Data::PhotoMedia> _photoMedia;
 	std::shared_ptr<Data::DocumentMedia> _documentMedia;
+	std::shared_ptr<Data::PhotoMedia> _videoCoverMedia;
 	base::flat_set<std::shared_ptr<Data::PhotoMedia>> _preloadPhotos;
 	base::flat_set<std::shared_ptr<Data::DocumentMedia>> _preloadDocuments;
 	int _rotation = 0;
@@ -668,6 +675,7 @@ private:
 	History *_migrated = nullptr;
 	History *_history = nullptr; // if conversation photos or files overview
 	MsgId _topicRootId = 0;
+	PeerId _monoforumPeerId = 0;
 	PeerData *_peer = nullptr;
 	UserData *_user = nullptr; // if user profile photos overview
 

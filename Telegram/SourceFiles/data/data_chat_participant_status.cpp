@@ -17,10 +17,13 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_user.h"
 #include "lang/lang_keys.h"
 #include "main/main_session.h"
+#include "ui/boxes/confirm_box.h"
 #include "ui/chat/attach/attach_prepare.h"
+#include "ui/layers/generic_box.h"
 #include "ui/text/text_utilities.h"
 #include "ui/toast/toast.h"
 #include "window/window_session_controller.h"
+#include "styles/style_widgets.h"
 
 namespace {
 
@@ -115,12 +118,15 @@ bool CanSendAnyOf(
 		not_null<const PeerData*> peer,
 		ChatRestrictions rights,
 		bool forbidInForums) {
-	if (const auto user = peer->asUser()) {
+	if (peer->session().frozen()
+		&& !peer->isFreezeAppealChat()) {
+		return false;
+	} else if (const auto user = peer->asUser()) {
 		if (user->isInaccessible()
 			|| user->isRepliesChat()
 			|| user->isVerifyCodes()) {
 			return false;
-		} else if (user->meRequiresPremiumToWrite()
+		} else if (user->requiresPremiumToWrite()
 			&& !user->session().premium()) {
 			return false;
 		} else if (rights
@@ -150,10 +156,14 @@ bool CanSendAnyOf(
 		}
 		return false;
 	} else if (const auto channel = peer->asChannel()) {
+		if (channel->monoforumDisabled()) {
+			return false;
+		}
 		using Flag = ChannelDataFlag;
 		const auto allowed = channel->amIn()
 			|| ((channel->flags() & Flag::HasLink)
-				&& !(channel->flags() & Flag::JoinToWrite));
+				&& !(channel->flags() & Flag::JoinToWrite))
+			|| channel->isMonoforum();
 		if (!allowed || (forbidInForums && channel->isForum())) {
 			return false;
 		} else if (channel->canPostMessages()) {
@@ -175,9 +185,15 @@ SendError RestrictionError(
 		not_null<PeerData*> peer,
 		ChatRestriction restriction) {
 	using Flag = ChatRestriction;
-	if (const auto restricted = peer->amRestricted(restriction)) {
+	if (peer->session().frozen()
+		&& !peer->isFreezeAppealChat()) {
+		return SendError({
+			.text = tr::lng_frozen_restrict_title(tr::now),
+			.frozen = true,
+		});
+	} else if (const auto restricted = peer->amRestricted(restriction)) {
 		if (const auto user = peer->asUser()) {
-			if (user->meRequiresPremiumToWrite()
+			if (user->requiresPremiumToWrite()
 				&& !user->session().premium()) {
 				return SendError({
 					.text = tr::lng_restricted_send_non_premium(
@@ -208,6 +224,9 @@ SendError RestrictionError(
 		}
 		const auto all = restricted.isWithEveryone();
 		const auto channel = peer->asChannel();
+		if (channel && channel->monoforumDisabled()) {
+			return tr::lng_action_direct_messages_disabled(tr::now);
+		}
 		if (!all && channel) {
 			auto restrictedUntil = channel->restrictedUntil();
 			if (restrictedUntil > 0

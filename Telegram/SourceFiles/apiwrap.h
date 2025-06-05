@@ -166,7 +166,8 @@ public:
 	QString exportDirectMessageLink(
 		not_null<HistoryItem*> item,
 		bool inRepliesContext,
-		bool forceNonPublicLink = false);
+		bool forceNonPublicLink = false,
+		std::optional<TimeId> videoTimestamp = {});
 	QString exportDirectStoryLink(not_null<Data::Story*> item);
 
 	void requestContacts();
@@ -199,7 +200,6 @@ public:
 	void requestChangelog(
 		const QString &sinceVersion,
 		Fn<void(const MTPUpdates &result)> callback);
-	void refreshTopPromotion();
 	void requestDeepLinkInfo(
 		const QString &path,
 		Fn<void(TextWithEntities message, bool updateRequired)> callback);
@@ -231,6 +231,9 @@ public:
 	void deleteAllFromParticipant(
 		not_null<ChannelData*> channel,
 		not_null<PeerData*> from);
+	void deleteSublistHistory(
+		not_null<ChannelData*> parentChat,
+		not_null<PeerData*> sublistPeer);
 
 	void requestWebPageDelayed(not_null<WebPageData*> page);
 	void clearWebPageRequest(not_null<WebPageData*> page);
@@ -286,6 +289,7 @@ public:
 	void requestSharedMedia(
 		not_null<PeerData*> peer,
 		MsgId topicRootId,
+		PeerId monoforumPeerId,
 		Storage::SharedMediaType type,
 		MsgId messageId,
 		SliceType slice);
@@ -305,7 +309,7 @@ public:
 	void finishForwarding(const SendAction &action);
 	void forwardMessages(
 		Data::ResolvedForwardDraft &&draft,
-		const SendAction &action,
+		SendAction action,
 		FnMut<void()> &&successCallback = nullptr);
 	void shareContact(
 		const QString &phone,
@@ -367,7 +371,7 @@ public:
 	void sendInlineResult(
 		not_null<UserData*> bot,
 		not_null<InlineBots::Result*> data,
-		const SendAction &action,
+		SendAction action,
 		std::optional<MsgId> localMessageId,
 		Fn<void(bool)> done = nullptr);
 	void sendMessageFail(
@@ -502,18 +506,21 @@ private:
 	void resolveJumpToHistoryDate(
 		not_null<PeerData*> peer,
 		MsgId topicRootId,
+		PeerId monoforumPeerId,
 		const QDate &date,
 		Fn<void(not_null<PeerData*>, MsgId)> callback);
 	template <typename Callback>
 	void requestMessageAfterDate(
 		not_null<PeerData*> peer,
 		MsgId topicRootId,
+		PeerId monoforumPeerId,
 		const QDate &date,
 		Callback &&callback);
 
 	void sharedMediaDone(
 		not_null<PeerData*> peer,
 		MsgId topicRootId,
+		PeerId monoforumPeerId,
 		SharedMediaType type,
 		Api::SearchResult &&parsed);
 	void globalMediaDone(
@@ -539,6 +546,9 @@ private:
 	void deleteAllFromParticipantSend(
 		not_null<ChannelData*> channel,
 		not_null<PeerData*> from);
+	void deleteSublistHistorySend(
+		not_null<ChannelData*> parentChat,
+		not_null<PeerData*> sublistPeer);
 
 	void uploadAlbumMedia(
 		not_null<HistoryItem*> item,
@@ -567,9 +577,6 @@ private:
 		not_null<HistoryItem*> item,
 		not_null<SendingAlbum*> album,
 		Fn<void(bool)> done = nullptr);
-
-	void getTopPromotionDelayed(TimeId now, TimeId next);
-	void topPromotionDone(const MTPhelp_PromoData &proxy);
 
 	void sendNotifySettingsUpdates();
 
@@ -662,6 +669,7 @@ private:
 	struct SharedMediaRequest {
 		not_null<PeerData*> peer;
 		MsgId topicRootId = 0;
+		PeerId monoforumPeerId = 0;
 		SharedMediaType mediaType = {};
 		MsgId aroundId = 0;
 		SliceType sliceType = {};
@@ -707,11 +715,6 @@ private:
 
 	std::unique_ptr<TaskQueue> _fileLoader;
 	base::flat_map<uint64, std::shared_ptr<SendingAlbum>> _sendingAlbums;
-
-	mtpRequestId _topPromotionRequestId = 0;
-	std::pair<QString, uint32> _topPromotionKey;
-	TimeId _topPromotionNextRequestTime = TimeId(0);
-	base::Timer _topPromotionTimer;
 
 	base::flat_set<not_null<const Data::ForumTopic*>> _updateNotifyTopics;
 	base::flat_set<not_null<const PeerData*>> _updateNotifyPeers;

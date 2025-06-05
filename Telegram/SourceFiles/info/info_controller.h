@@ -18,6 +18,7 @@ struct WhoReadList;
 
 namespace Data {
 class ForumTopic;
+class SavedSublist;
 } // namespace Data
 
 namespace Ui {
@@ -94,6 +95,7 @@ class Key {
 public:
 	explicit Key(not_null<PeerData*> peer);
 	explicit Key(not_null<Data::ForumTopic*> topic);
+	explicit Key(not_null<Data::SavedSublist*> sublist);
 	Key(Settings::Tag settings);
 	Key(Downloads::Tag downloads);
 	Key(Stories::Tag stories);
@@ -108,6 +110,7 @@ public:
 
 	PeerData *peer() const;
 	Data::ForumTopic *topic() const;
+	Data::SavedSublist *sublist() const;
 	UserData *settingsSelf() const;
 	bool isDownloads() const;
 	bool isGlobalMedia() const;
@@ -135,6 +138,7 @@ private:
 	std::variant<
 		not_null<PeerData*>,
 		not_null<Data::ForumTopic*>,
+		not_null<Data::SavedSublist*>,
 		Settings::Tag,
 		Downloads::Tag,
 		Stories::Tag,
@@ -225,6 +229,9 @@ public:
 	[[nodiscard]] Data::ForumTopic *topic() const {
 		return key().topic();
 	}
+	[[nodiscard]] Data::SavedSublist *sublist() const {
+		return key().sublist();
+	}
 	[[nodiscard]] UserData *settingsSelf() const {
 		return key().settingsSelf();
 	}
@@ -311,6 +318,7 @@ public:
 	[[nodiscard]] rpl::producer<Wrap> wrapValue() const;
 	[[nodiscard]] not_null<Ui::RpWidget*> wrapWidget() const;
 	void setSection(not_null<ContentMemento*> memento);
+	[[nodiscard]] bool hasBackButton() const;
 
 	Ui::SearchFieldController *searchFieldController() const {
 		return _searchFieldController.get();

@@ -947,7 +947,8 @@ void DraftOptionsBox(
 
 		AddFilledSkip(bottom);
 
-		if (!hasOnlyForcedForwardedInfo) {
+		if (!hasOnlyForcedForwardedInfo
+			&& !HasOnlyDroppedForwardedInfo(items)) {
 			Settings::AddButtonWithIcon(
 				bottom,
 				(dropNames
@@ -1198,12 +1199,15 @@ struct AuthorSelector {
 					_peer->owner().history(_peer),
 					&computeListSt().item));
 			delegate()->peerListRefreshRows();
-			TrackPremiumRequiredChanges(this, _lifetime);
+			TrackMessageMoneyRestrictionsChanges(this, _lifetime);
 		}
 		void loadMoreRows() override {
 		}
 		void rowClicked(not_null<PeerListRow*> row) override {
-			if (RecipientRow::ShowLockedError(this, row, WritePremiumRequiredError)) {
+			if (RecipientRow::ShowLockedError(
+					this,
+					row,
+					WriteMoneyRestrictionError)) {
 				return;
 			} else if (const auto onstack = _click) {
 				onstack();
@@ -1297,7 +1301,7 @@ void ShowReplyToChatBox(
 			.callback = [=](Chosen thread) {
 				_singleChosen.fire_copy(thread);
 			},
-			.premiumRequiredError = WritePremiumRequiredError,
+			.moneyRestrictionError = WriteMoneyRestrictionError,
 		}) {
 			_authorRow = AuthorRowSelector(
 				session,
@@ -1371,18 +1375,20 @@ void ShowReplyToChatBox(
 	auto chosen = [=](not_null<Data::Thread*> thread) mutable {
 		const auto history = thread->owningHistory();
 		const auto topicRootId = thread->topicRootId();
-		const auto draft = history->localDraft(topicRootId);
+		const auto monoforumPeerId = thread->monoforumPeerId();
+		const auto draft = history->localDraft(topicRootId, monoforumPeerId);
 		const auto textWithTags = draft
 			? draft->textWithTags
 			: TextWithTags();
 		const auto cursor = draft ? draft->cursor : MessageCursor();
 		reply.topicRootId = topicRootId;
+		reply.monoforumPeerId = monoforumPeerId;
 		history->setLocalDraft(std::make_unique<Data::Draft>(
 			textWithTags,
 			reply,
 			cursor,
 			Data::WebPageDraft()));
-		history->clearLocalEditDraft(topicRootId);
+		history->clearLocalEditDraft(topicRootId, monoforumPeerId);
 		history->session().changes().entryUpdated(
 			thread,
 			Data::EntryUpdate::Flag::LocalDraftSet);

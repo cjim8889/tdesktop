@@ -190,24 +190,30 @@ struct SendError {
 	struct Args {
 		QString text;
 		int boostsToLift = 0;
+		bool monoforumAdmin = false;
 		bool premiumToLift = false;
+		bool frozen = false;
 	};
 	SendError(Args &&args)
 	: text(std::move(args.text))
 	, boostsToLift(args.boostsToLift)
-	, premiumToLift(args.premiumToLift) {
+	, monoforumAdmin(args.monoforumAdmin)
+	, premiumToLift(args.premiumToLift)
+	, frozen(args.frozen) {
 	}
 
 	QString text;
 	int boostsToLift = 0;
+	bool monoforumAdmin = false;
 	bool premiumToLift = false;
+	bool frozen = false;
 
 	[[nodiscard]] SendError value_or(SendError other) const {
 		return *this ? *this : other;
 	}
 
 	explicit operator bool() const {
-		return !text.isEmpty();
+		return monoforumAdmin || !text.isEmpty();
 	}
 	[[nodiscard]] bool has_value() const {
 		return !text.isEmpty();
